@@ -1,96 +1,130 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { CartItem } from '../_models/recipe';
+import { BehaviorSubject } from 'rxjs';
+import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CartService {
-  private cartKey = 'user_cart';
-  private cart: CartItem[] = [];
+  private firestore = inject(Firestore);
+  private cartSubject = new BehaviorSubject<CartItem[]>([]);
+  cart$ = this.cartSubject.asObservable();
 
-  constructor() {
-    this.loadCart();
-  }
+  private currentUid: string | null = null;
+  private currentOrgId: string | null = null;
 
+  constructor() {}
 
-  private loadCart() {
-    const savedCart = localStorage.getItem(this.cartKey);
-    if (savedCart) {
-      this.cart = JSON.parse(savedCart);
-    }
-  }
-
- 
-  private saveCart() {
-    localStorage.setItem(this.cartKey, JSON.stringify(this.cart));
-  }
-
- 
-  addToCart(item: CartItem) {
-    const existingItem = this.cart.find(cartItem => cartItem.id === item.id);
-    if (existingItem) {
-      existingItem.quantity += item.quantity; 
+  async loadUserCart(uid: string, orgId: string) {
+    this.currentUid = uid;
+    this.currentOrgId = orgId;
+    
+    // Try Firestore first
+    const cartDoc = await getDoc(doc(this.firestore, `carts/${uid}`));
+    if (cartDoc.exists()) {
+      const data = cartDoc.data();
+      this.cartSubject.next(data['items'] || []);
     } else {
-      this.cart.push({ ...item, quantity: item.quantity }); // Add new item with quantity
+      // Fallback to local
+      const savedCart = localStorage.getItem(`cart_${uid}`);
+      const cart = savedCart ? JSON.parse(savedCart) : [];
+      this.cartSubject.next(cart);
     }
-    this.saveCart();
   }
 
- 
+  async saveUserCart(uid: string, orgId: string) {
+    const items = this.cartSubject.value;
+    const totalAmount = this.getTotalAmount();
+    
+    // Save to Firestore so Super Admin can see
+    await setDoc(doc(this.firestore, `carts/${uid}`), {
+      uid,
+      items,
+      totalAmount,
+      orgId,
+      updatedAt: new Date()
+    });
+
+    // Also local backup
+    localStorage.setItem(`cart_${uid}`, JSON.stringify(items));
+  }
+
+  private saveLocally(items: CartItem[]) {
+    this.cartSubject.next(items);
+    if (this.currentUid) {
+      localStorage.setItem(`cart_${this.currentUid}`, JSON.stringify(items));
+      // Proactively save to Firestore
+      this.saveUserCart(this.currentUid, this.currentOrgId || 'default');
+    }
+  }
+
+  addToCart(item: CartItem) {
+    const currentCart = this.cartSubject.value;
+    const existingItem = currentCart.find(cartItem => cartItem.id === item.id);
+    let updatedCart;
+
+    if (existingItem) {
+      updatedCart = currentCart.map(cartItem => 
+        cartItem.id === item.id 
+          ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
+          : cartItem
+      );
+    } else {
+      updatedCart = [...currentCart, { ...item }];
+    }
+    this.saveLocally(updatedCart);
+  }
+
   removeFromCart(itemId: string) {
-    this.cart = this.cart.filter(item => item.id !== itemId);
-    this.saveCart();
+    const updatedCart = this.cartSubject.value.filter(item => item.id !== itemId);
+    this.saveLocally(updatedCart);
   }
-
 
   increaseQuantity(item: CartItem) {
-    const existingItem = this.cart.find(cartItem => cartItem.id === item.id);
-    if (existingItem) {
-      existingItem.quantity += 1;
-      this.saveCart();
-    }
+    const updatedCart = this.cartSubject.value.map(cartItem => 
+      cartItem.id === item.id 
+        ? { ...cartItem, quantity: cartItem.quantity + 1 }
+        : cartItem
+    );
+    this.saveLocally(updatedCart);
   }
 
- 
   decreaseQuantity(item: CartItem) {
-    const existingItem = this.cart.find(cartItem => cartItem.id === item.id);
+    const currentCart = this.cartSubject.value;
+    const existingItem = currentCart.find(cartItem => cartItem.id === item.id);
+    
     if (existingItem) {
       if (existingItem.quantity > 1) {
-        existingItem.quantity -= 1;
+        const updatedCart = currentCart.map(cartItem => 
+          cartItem.id === item.id 
+            ? { ...cartItem, quantity: cartItem.quantity - 1 }
+            : cartItem
+        );
+        this.saveLocally(updatedCart);
       } else {
         this.removeFromCart(item.id);
       }
-      this.saveCart();
     }
   }
 
-  
   clearCart() {
-    this.cart = [];
-    localStorage.removeItem(this.cartKey);
-  }
-
-
-  loadUserCart(userEmail: string) {
-    const savedCart = localStorage.getItem(`cart_${userEmail}`);
-    if (savedCart) {
-      this.cart = JSON.parse(savedCart);
+    this.cartSubject.next([]);
+    if (this.currentUid) {
+      localStorage.removeItem(`cart_${this.currentUid}`);
+      this.saveUserCart(this.currentUid, this.currentOrgId || 'default');
     }
-  }
-
-  saveUserCart(userEmail: string) {
-    localStorage.setItem(`cart_${userEmail}`, JSON.stringify(this.cart));
   }
 
   getCart() {
-    return this.cart;
+    return this.cartSubject.value;
   }
 
   getTotalAmount() {
-    return this.cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return this.cartSubject.value.reduce((total, item) => total + item.price * item.quantity, 0);
   }
 
   getCartCount() {
-    return this.cart.reduce((count, item) => count + item.quantity, 0);
+    return this.cartSubject.value.reduce((count, item) => count + item.quantity, 0);
   }
 }

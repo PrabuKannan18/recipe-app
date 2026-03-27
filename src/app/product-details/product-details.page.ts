@@ -1,64 +1,100 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonHeader, IonTitle, IonToolbar, IonCardSubtitle, IonImg, IonCard,AlertController, IonCardHeader, IonLabel, IonCardContent, IonItem, IonRow, IonCol, IonButton, IonIcon, IonBackButton, IonButtons, IonList, IonText } from '@ionic/angular/standalone';
+import { 
+  IonContent, IonHeader, IonToolbar, IonButton, 
+  IonIcon, IonBackButton, IonButtons, AlertController,
+  IonBadge, IonFooter 
+} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { cartOutline, heartOutline, arrowBackCircle } from 'ionicons/icons';
-import { HomePage } from '../home/home.page';
-import { HeaderPage } from '../header/header.page';
-import { FooterPage } from '../footer/footer.page';
-import { Recipe } from '../_models/recipe';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AuthService } from '../_services/auth.service';
+import { 
+  cartOutline, heartOutline, heart, shareOutline, 
+  star, timeOutline, checkmarkCircleOutline, 
+  chevronBackOutline, addOutline, removeOutline 
+} from 'ionicons/icons';
+import { ActivatedRoute, Router } from '@angular/router';
 import { RecipeService } from '../_services/recipe.service';
+import { CartService } from '../_services/cart.service';
+import { WishlistService } from '../_services/wishlist.service';
+import { Recipe } from '../_models/recipe';
 
 @Component({
   selector: 'app-product-details',
   templateUrl: './product-details.page.html',
   styleUrls: ['./product-details.page.scss'],
   standalone: true,
-  imports: [IonText,HeaderPage,FooterPage, IonList, IonButtons, IonBackButton, IonIcon, IonButton, IonCol, IonRow, IonItem, IonCardContent, IonLabel, IonCardHeader, IonCard, IonImg, IonCardSubtitle, IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule,RouterLink]
+  imports: [
+    IonButtons, IonBackButton, IonIcon, IonButton, 
+    IonContent, IonHeader, IonToolbar, IonBadge, 
+    IonFooter, CommonModule, FormsModule
+  ]
 })
 export class ProductDetailsPage implements OnInit {
+  private route = inject(ActivatedRoute);
+  private recipeService = inject(RecipeService);
+  private cartService = inject(CartService);
+  private wishlistService = inject(WishlistService);
+  private alertController = inject(AlertController);
 
-  recipe:Recipe | undefined;
+  recipe: Recipe | undefined;
+  quantity: number = 1;
+  isLiked: boolean = false;
 
-
-  constructor(
-    private router:Router,
-    private auth:AuthService,
-    private route:ActivatedRoute,
-    private recipeService:RecipeService,
-    private alertController:AlertController,
-    
-  ) { addIcons({cartOutline,heartOutline,arrowBackCircle});}
-
-  ngOnInit():void {
-    const id=this.route.snapshot.paramMap.get('id')!;
-    this.recipeService.getRecipeById(id).subscribe((recipe)=>{
-      this.recipe = recipe;
-    })
+  constructor() { 
+    addIcons({ 
+      cartOutline, heartOutline, heart, shareOutline, 
+      star, timeOutline, checkmarkCircleOutline, 
+      chevronBackOutline, addOutline, removeOutline 
+    }); 
   }
-  addToWishlist(recipe: any) {
-    const storedItems = localStorage.getItem('wishlist');
-    const wishlist = storedItems ? JSON.parse(storedItems) : [];
-  
-    if (!wishlist.some((item: { id: any; }) => item.id === recipe.id)) {
-      wishlist.push(recipe);
-      localStorage.setItem('wishlist', JSON.stringify(wishlist));
-      this.showalert('Added to wishlist!');
-    } else {
-      this.showalert('Item already in wishlist!');
+
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.recipeService.getRecipeById(id).subscribe((recipe: Recipe) => {
+        this.recipe = recipe;
+      });
     }
   }
 
- async showalert(header:string){
-    const alert= await this.alertController.create({
-      header:header,
-      buttons:['Ok']
-    })
-      await alert.present();
+  increaseQty() {
+    this.quantity++;
   }
 
+  decreaseQty() {
+    if (this.quantity > 1) this.quantity--;
+  }
 
+  addToCart() {
+    if (this.recipe) {
+      this.cartService.addToCart({
+        id: this.recipe.id,
+        name: this.recipe.name,
+        price: this.recipe.price,
+        quantity: this.quantity,
+        image: this.recipe.imageUrl
+      });
+      this.showAlert('Success', `${this.recipe.name} added to cart!`);
+    }
+  }
+
+  toggleWishlist() {
+    this.isLiked = !this.isLiked;
+    if (this.recipe) {
+      if (this.isLiked) {
+        this.wishlistService.add(this.recipe);
+      } else {
+        // Remove logic
+      }
+    }
+  }
+
+  async showAlert(header: string, message: string) {
+    const alert = await this.alertController.create({
+      header: header,
+      message: message,
+      buttons: ['OK']
+    });
+    await alert.present();
+  }
 }

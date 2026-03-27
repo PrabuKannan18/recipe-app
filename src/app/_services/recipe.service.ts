@@ -1,31 +1,44 @@
-import { Injectable } from '@angular/core';
-import { Recipe } from '../_models/recipe';
+import { Injectable, inject } from '@angular/core';
+import { Firestore, collection, collectionData, doc, docData, setDoc, query, where, orderBy, limit } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { Recipe } from '../_models/recipe';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RecipeService {
-
- 
-  private collectionName = 'recipes'; 
-
-  constructor(private firestore: AngularFirestore) {}
+  private firestore = inject(Firestore);
+  private collectionName = 'recipes';
 
   // Add a recipe to Firestore
-  addRecipe(recipe: Recipe): Promise<void> {
-    const id = this.firestore.createId(); 
-    return this.firestore.collection<Recipe>(this.collectionName).doc(id).set({ ...recipe, id });
+  async addRecipe(recipe: any, orgId: string): Promise<void> {
+    const recipesRef = collection(this.firestore, this.collectionName);
+    const newDoc = doc(recipesRef);
+    return setDoc(newDoc, { ...recipe, id: newDoc.id, orgId });
   }
 
-  // Get all recipes
-  getRecipes(): Observable<Recipe[]> {
-    return this.firestore.collection<Recipe>(this.collectionName).valueChanges();
+  // Get recipes for specific organization
+  getRecipes(orgId?: string): Observable<Recipe[]> {
+    const recipesRef = collection(this.firestore, this.collectionName);
+    const q = orgId 
+      ? query(recipesRef, where('orgId', '==', orgId))
+      : query(recipesRef, orderBy('createdAt', 'desc'));
+    
+    return collectionData(q, { idField: 'id' }) as Observable<Recipe[]>;
   }
 
-  // Get a recipe by ID
-  getRecipeById(id: string): Observable<Recipe | undefined> {
-    return this.firestore.collection<Recipe>(this.collectionName).doc(id).valueChanges();
+  // Get trending recipes for specific organization
+  getTrendingRecipes(orgId?: string): Observable<Recipe[]> {
+    const recipesRef = collection(this.firestore, this.collectionName);
+    const q = orgId
+      ? query(recipesRef, where('orgId', '==', orgId), limit(10))
+      : query(recipesRef, limit(10));
+      
+    return collectionData(q, { idField: 'id' }) as Observable<Recipe[]>;
+  }
+
+  getRecipeById(id: string): Observable<Recipe> {
+    const recipeRef = doc(this.firestore, `${this.collectionName}/${id}`);
+    return docData(recipeRef, { idField: 'id' }) as Observable<Recipe>;
   }
 }

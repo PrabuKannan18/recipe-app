@@ -1,35 +1,98 @@
-<app-header></app-header>
+<ion-header class="ion-no-border overlay-header">
+  <ion-toolbar transparent>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" class="circle-btn" icon="chevron-back-outline"></ion-back-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button class="circle-btn" (click)="toggleWishlist()">
+        <ion-icon [name]="isLiked ? 'heart' : 'heart-outline'" [color]="isLiked ? 'danger' : 'dark'"></ion-icon>
+      </ion-button>
+      <ion-button class="circle-btn">
+        <ion-icon name="share-outline" color="dark"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
 
+<ion-content [fullscreen]="true" class="product-details-content">
+  <!-- Hero Section -->
+  <div class="hero-image-container">
+    <img [src]="recipe?.imageUrl" class="hero-image" alt="Product Image">
+  </div>
 
-<ion-content>
-  <ion-card class="ion-margin">
-    <ion-title class="ion-margin ion-text-center" color="secondary"><strong>Product detail</strong></ion-title>
-    <ion-img class="ion-margin" [src]="recipe?.imageUrl" style="height: 400px; object-fit: cover;"></ion-img>
+  <div class="details-card-container">
+    <div class="details-card ion-padding">
+      <div class="category-tag-row">
+        <ion-badge color="tertiary">{{ recipe?.category }}</ion-badge>
+        <span class="stock-status"><ion-icon name="checkmark-circle-outline"></ion-icon> In Stock</span>
+      </div>
 
-    <ion-card-header>
-      <ion-label color="dark">
-        <h1><b>{{recipe?.name}}</b></h1>
-      </ion-label>
-      <ion-label color="primary">
-        <h2><b>${{recipe?.price}}</b></h2>
-      </ion-label>
-    </ion-card-header>
+      <h1 class="product-title">{{ recipe?.name }}</h1>
+      
+      <div class="meta-info-row">
+        <div class="rating-info">
+          <ion-icon name="star" color="warning"></ion-icon>
+          <span class="rating-value">4.8</span>
+          <span class="review-count">(1.2k+ reviews)</span>
+        </div>
+        <div class="delivery-info">
+          <ion-icon name="time-outline" color="medium"></ion-icon>
+          <span>25-35 mins</span>
+        </div>
+      </div>
 
-    <ion-card-content>
-      <ion-list >
-        <ion-item > Category: <strong class="ion-padding-start" >{{recipe?.category}}</strong> </ion-item>
-        <ion-item>Description: <strong class="ion-padding-start"> {{recipe?.description}}</strong> </ion-item>
-      </ion-list>
-      <ion-label >
-        <ion-button shape="round" >
-          <ion-icon name="cart-outline" slot="start"></ion-icon>Order Now</ion-button>
-          <ion-button (click)="addToWishlist(recipe)" color="dark" fill="clear">
-            <ion-icon name="heart-outline"></ion-icon>
-           <strong><ion-text> Add to wishlist</ion-text></strong></ion-button>
-           <ion-button color="secondary"  fill="clear" routerLink="/home" > 
-          <ion-icon name="arrow-back-circle" slot="start"></ion-icon><b>Back to home</b></ion-button>
-      </ion-label>
-    </ion-card-content>
-  </ion-card>
-  <app-footer></app-footer>
+      <div class="price-section">
+        <span class="price-symbol">₹</span>
+        <span class="price-value">{{ recipe?.price }}</span>
+        <span class="price-unit">/ total</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="description-section">
+        <h3>Description</h3>
+        <p [ngClass]="{'collapsed': true}">
+          {{ recipe?.description }}
+        </p>
+        <ion-button fill="clear" color="primary" size="small" class="read-more-btn">Read more</ion-button>
+      </div>
+
+      <!-- Add info rows like Calories, etc. -->
+      <div class="info-grid">
+        <div class="info-cell">
+          <span class="label">Calories</span>
+          <span class="value">340 kcal</span>
+        </div>
+        <div class="info-cell">
+          <span class="label">Weight</span>
+          <span class="value">350g</span>
+        </div>
+        <div class="info-cell">
+          <span class="label">Distance</span>
+          <span class="value">2.4 km</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </ion-content>
+
+<!-- Sticky Checkout Bar -->
+<ion-footer class="ion-no-border product-footer">
+  <div class="footer-container ion-padding">
+    <div class="qty-selector">
+      <ion-button fill="clear" (click)="decreaseQty()">
+        <ion-icon name="remove-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+      <span class="qty-text">{{ quantity }}</span>
+      <ion-button fill="clear" (click)="increaseQty()">
+        <ion-icon name="add-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </div>
+    
+    <ion-button expand="block" shape="round" class="premium-btn add-to-cart-btn" (click)="addToCart()">
+      Add to Basket 
+      <span class="price-separator"></span>
+      ₹{{ (recipe?.price || 0) * quantity }}
+    </ion-button>
+  </div>
+</ion-footer>

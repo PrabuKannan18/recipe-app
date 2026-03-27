@@ -1,0 +1,185 @@
+.checkout-content {
+  --background: #f1f2f6;
+}
+
+/* Stepper Custom UI */
+.stepper-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: white;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f2f6;
+
+  .step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      background: #f1f2f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #a4b0be;
+    }
+
+    .step-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #a4b0be;
+    }
+
+    &.active {
+      .step-num { background: var(--ion-color-primary); color: white; }
+      .step-label { color: var(--ion-color-primary); }
+    }
+
+    &.completed {
+      .step-num { background: var(--ion-color-success); color: white; }
+      .step-label { color: var(--ion-color-success); }
+    }
+  }
+
+  .step-line {
+    flex: 1;
+    height: 1px;
+    background: #e1e2e6;
+    margin: 0 8px;
+  }
+}
+
+.checkout-container {
+  padding: 12px 16px 120px;
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #2d3436;
+  }
+}
+
+/* Form Styles */
+.checkout-item {
+  --background: white;
+  --border-radius: 14px;
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  font-size: 0.95rem;
+
+  ion-icon {
+    font-size: 1.25rem;
+    color: #747d8c;
+    margin-right: 12px;
+  }
+  
+  ion-input, ion-textarea {
+    --padding-start: 0;
+  }
+}
+
+/* Address Type Pill Radio Group */
+.address-type-group {
+  .type-item {
+    --background: white;
+    --border-radius: 8px;
+    --padding-start: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+
+    ion-radio {
+      --box-shadow-checked: none;
+      --color-checked: var(--ion-color-primary);
+    }
+  }
+}
+
+/* Payment Methods Stylized Radio List */
+.payment-methods {
+  .payment-method-item {
+    background: white;
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+
+    &.selected {
+      border-color: var(--ion-color-primary);
+      background: rgba(var(--ion-color-primary-rgb), 0.05);
+    }
+
+    .payment-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      color: #2d3436;
+      font-size: 0.95rem;
+
+      ion-icon { font-size: 1.5rem; }
+    }
+
+    ion-radio {
+      --color-checked: var(--ion-color-primary);
+    }
+  }
+}
+
+/* Review Containers */
+.review-box {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+
+  h4 { font-size: 0.95rem; margin-bottom: 8px; color: #a4b0be; text-transform: uppercase; }
+  p { margin: 4px 0; font-weight: 700; color: #2d3436; font-size: 0.95rem; }
+}
+
+/* Sticky Multi-Step Footer Navigation */
+.checkout-footer {
+  background: white;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.06);
+
+  .footer-container {
+    padding: 16px 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+
+    .next-btn, .place-btn {
+      flex: 1;
+      --height: 52px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      margin: 0;
+    }
+
+    .place-btn {
+      --box-shadow: 0 8px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+    }
+  }
+}
+
+/* Validation Styles */
+.error-text {
+  color: #ff4757;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: -4px;
+  margin-bottom: 12px;
+  padding-left: 12px;
+  display: block;
+}

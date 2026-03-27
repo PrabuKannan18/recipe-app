@@ -1,0 +1,218 @@
+.cart-content {
+  --background: #f1f2f6;
+  padding-bottom: 120px; // Space for sticky footer
+}
+
+/* Empty State */
+.empty-cart-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 32px;
+  background: white;
+  min-height: 100%;
+
+  .empty-illustration {
+    width: 80px;
+    height: 80px;
+    background: #f1f2f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+
+    ion-icon {
+      font-size: 3rem;
+      color: #a4b0be;
+    }
+  }
+
+  h2 { font-weight: 800; color: #2d3436; margin-bottom: 12px; }
+  p { color: #636e72; font-size: 0.95rem; line-height: 1.5; margin-bottom: 32px; }
+}
+
+/* Cart Items Wrapper */
+.cart-items-wrapper {
+  padding: 16px;
+
+  .items-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    margin-bottom: 16px;
+
+    .item-row {
+      display: flex;
+      gap: 12px;
+      padding: 16px 0;
+      border-bottom: 1px solid #f1f2f6;
+
+      &:last-child { border-bottom: none; }
+
+      .item-img-container {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        overflow: hidden;
+
+        img { width: 100%; height: 100%; object-fit: cover; }
+      }
+
+      .item-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        .item-title-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+
+          .item-name {
+            font-size: 1rem;
+            font-weight: 800;
+            margin: 0;
+            color: #2d3436;
+          }
+
+          .item-delete {
+            font-size: 1.2rem;
+            color: #ff4757;
+            cursor: pointer;
+          }
+        }
+
+        .item-price {
+          color: #636e72;
+          font-size: 0.85rem;
+          margin: 4px 0;
+          font-weight: 600;
+        }
+
+        .item-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          .item-total-price {
+            font-weight: 800;
+            color: #000;
+            font-size: 0.95rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+/* Quantity Control pill */
+.quantity-control {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--ion-color-primary);
+  border-radius: 8px;
+  height: 32px;
+  overflow: hidden;
+
+  ion-button {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    --color: var(--ion-color-primary);
+    font-weight: 800;
+    margin: 0;
+    --background-hover: rgba(var(--ion-color-primary-rgb), 0.1);
+  }
+
+  .qty-text {
+    font-weight: 800;
+    color: var(--ion-color-primary);
+    padding: 0 8px;
+    font-size: 0.9rem;
+    min-width: 24px;
+    text-align: center;
+  }
+}
+
+/* Bill Summary Card */
+.bill-summary-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+
+  .summary-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: #2d3436;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 0.9rem;
+    color: #636e72;
+    font-weight: 500;
+  }
+
+  .divider {
+    border-top: 1px dashed #ced6e0;
+    margin: 12px 0;
+  }
+
+  .total-row {
+    font-size: 1.1rem;
+    color: #2d3436;
+  }
+}
+
+/* Instructions Card */
+.instructions-card {
+  background: white;
+  border-radius: 20px;
+  
+  .info-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+
+    h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    p { font-size: 0.8rem; color: #a4b0be; }
+  }
+}
+
+/* Bottom Footer (Sticky) */
+.cart-footer {
+  background: white;
+  box-shadow: 0 -8px 20px rgba(0,0,0,0.06);
+
+  .footer-container {
+    padding: 16px 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .price-info {
+      display: flex;
+      flex-direction: column;
+
+      .total-text { font-size: 0.75rem; color: #a4b0be; font-weight: 600; text-transform: uppercase; }
+      .grand-total-text { font-size: 1.25rem; font-weight: 900; color: #2d3436; }
+    }
+
+    .checkout-btn {
+      width: 220px;
+      --height: 54px;
+      font-weight: 800;
+      margin: 0;
+      font-size: 1rem;
+      --box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+    }
+  }
+}

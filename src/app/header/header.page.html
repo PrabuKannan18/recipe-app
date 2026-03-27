@@ -1,20 +1,42 @@
-<!------------------------------------------Header------------------------------------------------------->
-<ion-header >
-  <ion-toolbar color="light">
-    <!-- <ion-buttons slot="start">
-      <ion-button>
-        <ion-icon slot="icon-only" name="menu" color="dark"></ion-icon>
-      </ion-button>
-    </ion-buttons> -->
+<ion-header class="ion-no-border premium-header">
+  <ion-toolbar color="light" class="ion-padding-horizontal">
+    <!-- Left: Location Selection -->
+    <ion-buttons slot="start">
+      <div class="location-container" (click)="selectLocation()">
+        <div class="location-top">
+          <ion-icon name="location-outline" color="primary"></ion-icon>
+          <ion-label class="location-label">Home</ion-label>
+          <ion-icon name="chevron-down-outline" class="chevron-icon"></ion-icon>
+        </div>
+        <ion-text color="medium" class="address-text">24, Royal Garden, Chennai...</ion-text>
+      </div>
+    </ion-buttons>
 
-    <ion-img routerLink="/" src="assets/imgs/recipe.jpg" style="width: 150px; height: 70px; object-fit: cover; margin: auto;">
-    </ion-img>
+    <!-- Center: Logo -->
+    <!-- <ion-title class="ion-text-center">
+      <img src="assets/imgs/recipe.jpg" class="header-logo" alt="Logo">
+    </ion-title> -->
 
-    <!-- <ion-buttons slot="end">
-      <ion-button>
-        <ion-icon slot="icon-only" name="search" color="dark"></ion-icon>
+    <!-- Right: Actions -->
+    <ion-buttons slot="end">
+      <ion-button class="action-btn" [routerLink]="['/search']">
+        <ion-icon name="search" slot="icon-only"></ion-icon>
       </ion-button>
-    </ion-buttons> -->
+      <ion-button class="action-btn" [routerLink]="['/myaccount']">
+        <ion-icon name="person-circle-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+      <ion-button id="cart-button" class="action-btn cart-btn" [routerLink]="['/cart']">
+        <ion-icon name="cart-outline" slot="icon-only"></ion-icon>
+        <ion-badge *ngIf="cartCount > 0" color="primary" class="cart-badge">{{ cartCount }}</ion-badge>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
-</ion-header>
 
+  <!-- Optional Sub-header Search Bar (Swiggy Style) -->
+  <div class="search-bar-row ion-padding" *ngIf="showSearch">
+    <div class="search-input-container">
+      <ion-icon name="search-outline"></ion-icon>
+      <ion-input placeholder="Search for food or restaurants" [routerLink]="['/search']" readonly></ion-input>
+    </div>
+  </div>
+</ion-header>

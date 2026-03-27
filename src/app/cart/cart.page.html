@@ -1,82 +1,114 @@
-<ion-header>
+<ion-header class="ion-no-border">
   <ion-toolbar color="light">
     <ion-buttons slot="start">
       <ion-button routerLink="/home">
-        <ion-icon name="arrow-back-outline" slot="icon-only" size="large"></ion-icon>
+        <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title class="ion-no-padding" color="secondary">
-      <strong>Food cart</strong>
-    </ion-title>
+    <ion-title><b>My Basket</b></ion-title>
+    <ion-buttons slot="end">
+      <ion-button color="danger" (click)="clearCart()" size="small" *ngIf="(cart$ | async)?.length! > 0">
+        Clear
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <ion-card class="ion-margin">
-    <ng-container *ngIf="cart.length > 0; else emptyCart">
-      <ion-card-content>
-        <ion-list>
-          <ion-item *ngFor="let item of cart" lines="full">
-            <ion-grid>
-              <ion-row class="ion-align-items-center">
-                <ion-col size="5">
-                  <ion-img [src]="item.image" style="width: 100%; height: 100px; object-fit: cover;"></ion-img>
-                </ion-col>
+<ion-content class="cart-content">
+  <!-- Empty State -->
+  <div class="empty-cart-container ion-padding ion-text-center" *ngIf="(cart$ | async)?.length === 0">
+    <div class="empty-illustration">
+      <ion-icon name="cart-outline"></ion-icon>
+    </div>
+    <h2>Your basket is empty</h2>
+    <p>Good food is always cooking! Go ahead, order some yummy items from the menu.</p>
+    <ion-button expand="block" shape="round" color="primary" routerLink="/home" class="premium-btn">
+      See items near you
+    </ion-button>
+  </div>
 
-                <ion-col size="5">
-                  <ion-label>
-                    <h2>{{ item.name }}</h2>
-                    <p>$ {{ item.price }}</p>
-                    <h4>Quantity: {{ item.quantity }}</h4>
-                    <strong >Total: ${{ item.price * item.quantity }}</strong>
-                  </ion-label>
-                </ion-col>
-
-            
-                <ion-col size="2" class="ion-text-right">
-                  <ion-button size="small" color="primary" (click)="increaseQuantity(item)">
-                    <ion-icon name="add-outline"></ion-icon>
-                  </ion-button>
-
-                  <ion-button size="small" [disabled]="item.quantity <= 1" color="primary" (click)="decreaseQuantity(item)">
-                    <ion-icon name="remove-outline"></ion-icon>
-                  </ion-button>
-
-                  <ion-button size="small" fill="clear" color="dark" (click)="removeItem(item.id)">
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </ion-button>
-                </ion-col>
-              </ion-row>
-            </ion-grid>
-          </ion-item>
-        </ion-list>
-
-        <ion-item lines="none">
-          <ion-label slot="start"><strong>Total amount:</strong></ion-label>
-          <ion-text slot="start" >$ {{ totalAmount }}</ion-text>
-        </ion-item>
-
-        <ion-button expand="block" color="primary" routerLink="/checkout">
-          <ion-icon name="cart-outline" slot="start"></ion-icon> Proceed to checkout
-        </ion-button>
-      </ion-card-content>
-    </ng-container>
-
-    <ng-template #emptyCart>
-      <ion-card-content>
-        <ion-item lines="none" style="--background: var(--ion-color-warning-tint);">
-          <ion-label color="warning" class="ion-text-center">
-            <h2>Your food cart is empty!</h2>
-            <ion-icon name="sad-outline" color="warning" size="large"></ion-icon>
-          </ion-label>
-        </ion-item>
-
-        <div class="ion-text-center ion-margin-top">
-          <ion-button color="primary" routerLink="/home">Order now</ion-button>
+  <!-- Cart Items List -->
+  <div class="cart-items-wrapper" *ngIf="(cart$ | async)?.length! > 0">
+    <div class="items-card ion-padding">
+      <div class="item-row" *ngFor="let item of (cart$ | async)">
+        <div class="item-img-container">
+          <img [src]="item.image" alt="Food">
         </div>
-      </ion-card-content>
-    </ng-template>
-  </ion-card>
+        <div class="item-info">
+          <div class="item-title-row">
+            <h4 class="item-name">{{ item.name }}</h4>
+            <ion-icon name="trash-outline" class="item-delete" (click)="removeItem(item.id)"></ion-icon>
+          </div>
+          <p class="item-price">₹{{ item.price }}</p>
+          <div class="item-actions">
+            <div class="quantity-control">
+              <ion-button fill="clear" (click)="decreaseQuantity(item)">
+                <ion-icon name="remove-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+              <span class="qty-text">{{ item.quantity }}</span>
+              <ion-button fill="clear" (click)="increaseQuantity(item)">
+                <ion-icon name="add-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+            </div>
+            <span class="item-total-price">₹{{ item.price * item.quantity }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <app-footer></app-footer>
+    <!-- Bill Summary -->
+    <div class="bill-summary-card ion-padding">
+      <div class="summary-title">
+        <ion-icon name="receipt-outline" color="primary"></ion-icon>
+        <span>Bill Summary</span>
+      </div>
+      
+      <div class="summary-row">
+        <span>Item Total</span>
+        <span>₹{{ totalAmount$ | async }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Delivery Fee</span>
+        <span>₹{{ deliveryFee }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Taxes and Charges</span>
+        <span>₹{{ (taxAmount$ | async) | number:'1.0-0' }}</span>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="summary-row total-row">
+        <span><b>Order Total</b></span>
+        <span><b>₹{{ (grandTotal$ | async) | number:'1.0-0' }}</b></span>
+      </div>
+    </div>
+
+    <!-- Suggestions/Instructions -->
+    <div class="instructions-card ion-padding ion-margin-top">
+      <ion-item lines="none" class="info-item">
+        <ion-icon name="notifications-outline" slot="start" color="warning"></ion-icon>
+        <ion-label>
+          <h3><b>Delivery Instructions</b></h3>
+          <p>Avoid calling? Leave at the door.</p>
+        </ion-label>
+        <ion-icon name="chevron-forward-outline" slot="end" size="small"></ion-icon>
+      </ion-item>
+    </div>
+  </div>
+
 </ion-content>
+
+<!-- Sticky Checkout Footer -->
+<ion-footer class="cart-footer ion-no-border" *ngIf="(cart$ | async)?.length! > 0">
+  <div class="footer-container ion-padding">
+    <div class="price-info">
+      <span class="total-text">Total Price</span>
+      <span class="grand-total-text">₹{{ (grandTotal$ | async) | number:'1.0-0' }}</span>
+    </div>
+    <ion-button expand="block" shape="round" class="premium-btn checkout-btn" (click)="checkout()">
+      Proceed to Checkout
+      <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+    </ion-button>
+  </div>
+</ion-footer>

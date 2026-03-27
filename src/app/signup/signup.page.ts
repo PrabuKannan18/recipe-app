@@ -1,10 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonInputPasswordToggle, IonHeader, IonTitle, IonToolbar, IonGrid, IonRow, IonCol, IonCardTitle, IonItem, IonInput, IonButton, IonText, IonFooter, IonIcon, AlertController } from '@ionic/angular/standalone';
+import { 
+  IonContent, IonInputPasswordToggle, IonItem, IonInput, 
+  IonButton, IonIcon, IonSpinner, AlertController,
+  IonSelect, IonSelectOption
+} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { lockClosed, lockClosedOutline, person } from 'ionicons/icons';
-import { RouterLink } from '@angular/router';
+import { 
+  person, lockClosedOutline, logoGoogle, 
+  mailOutline, restaurant, shieldCheckmarkOutline,
+  businessOutline, peopleOutline, keyOutline
+} from 'ionicons/icons';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../_services/auth.service';
 
 @Component({
@@ -12,30 +20,59 @@ import { AuthService } from '../_services/auth.service';
   templateUrl: './signup.page.html',
   styleUrls: ['./signup.page.scss'],
   standalone: true,
-  imports: [IonIcon, IonInputPasswordToggle, RouterLink, IonFooter, IonText, IonButton, IonInput, IonItem, IonCardTitle, IonCol, IonRow, IonGrid, IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule]
+  imports: [
+    IonIcon, IonInputPasswordToggle, RouterLink, 
+    IonButton, IonInput, IonItem, IonContent, 
+    CommonModule, FormsModule, IonSpinner,
+    IonSelect, IonSelectOption
+  ]
 })
 export class SignupPage implements OnInit {
+  private auth = inject(AuthService);
+  private router = inject(Router);
+  private alertController = inject(AlertController);
+
   email: string = '';
   password: string = '';
   cpassword: string = '';
+  role: 'member' | 'manager' = 'member';
+  orgName: string = '';
+  joinCode: string = '';
+  isLoading: boolean = false;
 
-  constructor(private auth: AuthService, private alertController: AlertController) {
-    addIcons({ person, lockClosedOutline, lockClosed });
+  constructor() {
+    addIcons({ 
+      person, lockClosedOutline, logoGoogle, 
+      mailOutline, restaurant, shieldCheckmarkOutline,
+      businessOutline, peopleOutline, keyOutline
+    });
   }
 
   ngOnInit() {}
 
   async signup() {
-    if (!this.email || !this.password) {
-      await this.showAlert('Incomplete details', 'Please enter both email and password.');
+    if (!this.email || !this.password || !this.cpassword) {
+      await this.showAlert('Incomplete details', 'Please fill in all fields.');
       return;
     }
 
-    if (this.password === this.cpassword) {
-      this.auth.signup(this.email, this.password);
-    } else {
-      await this.showAlert('Password mismatch', 'The passwords do not match. Please try again.');
+    if (this.password !== this.cpassword) {
+      await this.showAlert('Password mismatch', 'The passwords do not match.');
+      return;
     }
+
+    this.isLoading = true;
+    try {
+      await this.auth.signup(this.email, this.password, this.orgName, this.role, this.joinCode);
+    } catch (error: any) {
+      this.showAlert('Signup Failed', error.message || 'Could not create account.');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  googleSignup() {
+    this.auth.googleSignIn();
   }
 
   async showAlert(header: string, message: string) {
@@ -44,7 +81,6 @@ export class SignupPage implements OnInit {
       message: message,
       buttons: ['OK']
     });
-
     await alert.present();
   }
 }

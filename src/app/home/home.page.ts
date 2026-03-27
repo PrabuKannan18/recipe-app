@@ -1,102 +1,138 @@
 import { CommonModule } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
-import { IonHeader, IonicSlides,IonToolbar,AlertController, IonTitle, IonContent, IonButtons, IonButton, IonIcon, IonImg } from '@ionic/angular/standalone';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, inject } from '@angular/core';
+import { 
+  IonicSlides, AlertController, 
+  IonContent, IonButton, IonIcon, IonGrid, 
+  IonRow, IonCol, IonLabel, IonCard, IonCardHeader, IonCardSubtitle, 
+  IonCardTitle, IonCardContent, IonSkeletonText, IonAvatar
+} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { menu, search, wallet, restaurant, car, checkmarkCircle, cart, starOutline, restaurantOutline, medkitOutline, timeOutline, location, call, mail, logoFacebook, logoTwitter, logoInstagram, logoYoutube, bagOutline, menuOutline, heartOutline, cartOutline, personOutline, shareOutline, shareSocialOutline, share, shareSocial, addOutline, removeOutline } from 'ionicons/icons';
+import { 
+  menuOutline, searchOutline, notificationsOutline, star, 
+  timeOutline, heartOutline, cartOutline, shareSocialOutline, 
+  addOutline, removeOutline, chevronForwardOutline, schoolOutline,
+  shieldCheckmarkOutline, restaurantOutline
+} from 'ionicons/icons';
 import { register } from 'swiper/element/bundle';
 import { HeaderPage } from '../header/header.page';
 import { FooterPage } from '../footer/footer.page';
-import { shareReplay } from 'rxjs';
-import { CartItem, Recipe } from '../_models/recipe';
+import { Recipe, CategoryCard } from '../_models/recipe';
 import { RecipeService } from '../_services/recipe.service';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CartService } from '../_services/cart.service';
-import { AuthService } from '../_services/auth.service';
 import { WishlistService } from '../_services/wishlist.service';
+import { AuthService } from '../_services/auth.service';
+import { Firestore, doc, getDoc } from '@angular/fire/firestore';
+
 register();
+
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
   standalone: true,
-  imports: [IonImg,CommonModule, IonIcon, IonButton, IonButtons, IonHeader, IonToolbar, IonTitle, IonContent,HeaderPage,FooterPage],
-  schemas:[CUSTOM_ELEMENTS_SCHEMA]
+  imports: [
+    CommonModule, IonIcon, IonButton, 
+    IonContent, IonGrid, IonRow, IonCol, 
+    IonLabel, IonCard, IonCardHeader, IonCardSubtitle, IonCardTitle, 
+    IonCardContent, IonSkeletonText, IonAvatar, HeaderPage, FooterPage, RouterModule
+  ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class HomePage implements OnInit {
-  constructor(private recipeService:RecipeService,
-    private router:Router,
-    private wishlistService: WishlistService,
-    private cartService: CartService,
-     private authService: AuthService,
-     private alertController:AlertController,
-  )  {addIcons({addOutline,removeOutline,starOutline,timeOutline,medkitOutline,wallet,restaurant,car,checkmarkCircle,heartOutline,shareOutline,menu,search,location,call,mail,logoFacebook,logoTwitter,logoInstagram,logoYoutube,bagOutline,menuOutline,cartOutline,personOutline,restaurantOutline,cart,shareSocial});}
+  private recipeService = inject(RecipeService);
+  private router = inject(Router);
+  private cartService = inject(CartService);
+  private wishlistService = inject(WishlistService);
+  private alertController = inject(AlertController);
+  private auth = inject(AuthService);
+  private firestore = inject(Firestore);
 
-  images = [
-    {image:'home6.avif'},
-    {image: 'home3.avif'},
-    {image:'home5.jpg'}
-  ]
+  isLoading = true;
+  recipes: Recipe[] = [];
+  trendingRecipes: Recipe[] = [];
+  userOrgId: string | undefined;
+  orgDetails: any | null = null;
+  isManager = false;
+
+  banners = [
+    { image: 'home6.avif', title: 'Flat 50% Off', subtitle: 'On your first 3 orders' },
+    { image: 'home3.avif', title: 'Free Delivery', subtitle: 'Above ₹199' },
+    { image: 'home5.jpg', title: 'Top Rated', subtitle: 'Curated for you' }
+  ];
+
+  categories: CategoryCard[] = [
+    { id: '1', name: 'Pizza', icon: 'pizza-outline', color: '#ff4757' },
+    { id: '2', name: 'Burgers', icon: 'fast-food-outline', color: '#ffa502' },
+    { id: '3', name: 'Sushi', icon: 'fish-outline', color: '#2ed573' },
+    { id: '4', name: 'Drinks', icon: 'beer-outline', color: '#1e90ff' },
+    { id: '5', name: 'Ice Cream', icon: 'ice-cream-outline', color: '#ff6b81' },
+    { id: '6', name: 'Noodles', icon: 'restaurant-outline', color: '#2f3542' }
+  ];
 
   swiperModules = [IonicSlides];
 
-  trackByFn(index: number, item: any): number {
-    return index;
+  constructor() {
+    addIcons({
+      menuOutline, searchOutline, notificationsOutline, star, 
+      timeOutline, heartOutline, cartOutline, shareSocialOutline, 
+      addOutline, removeOutline, chevronForwardOutline, schoolOutline,
+      shieldCheckmarkOutline, restaurantOutline
+    });
   }
-
-  recipes:Recipe[]=[];
 
   ngOnInit() {
-    this.getAllRecipe();
+    this.auth.userProfile$.subscribe(async (profile: any) => {
+      if (profile) {
+        this.userOrgId = profile.orgId;
+        this.isManager = profile.role === 'manager' || profile.role === 'superadmin';
+        this.loadData();
+        
+        // Fetch org details for branding
+        const orgDoc = await getDoc(doc(this.firestore, `organizations/${profile.orgId}`));
+        if (orgDoc.exists()) {
+          this.orgDetails = orgDoc.data();
+        }
+      }
+    });
   }
 
-  getAllRecipe(){
-    this.recipeService.getRecipes().subscribe(data=>{
-      this.recipes=data;
-    })
+  loadData() {
+    this.isLoading = true;
+    this.recipeService.getRecipes(this.userOrgId).subscribe({
+      next: (data) => {
+        this.recipes = data;
+        this.trendingRecipes = data.slice(0, 4);
+        this.isLoading = false;
+      },
+      error: () => this.isLoading = false
+    });
   }
 
-  viewRecipe(id?:string){
-    this.router.navigate([`/home/${id}`])
+  viewRecipe(id: string) {
+    this.router.navigate([`/home/${id}`]);
   }
-
-  addToWishlist(recipe: Recipe): void {
-    const wishlist = this.wishlistService.get();
-    
-    // Check if the recipe is already in the wishlist
-    const exists = wishlist.some(item => item.id === recipe.id);
-    
-    if (exists) {
-      this.showalert(`${recipe.name} is already in your wishlist`);
-    } else {
-      this.wishlistService.add(recipe);
-      this.showalert(`${recipe.name} added to wishlist`);
-    }
-  }
-
 
   orderNow(recipe: Recipe) {
-    const cartItem: CartItem = {
+    this.cartService.addToCart({
       id: recipe.id,
       name: recipe.name,
       price: recipe.price,
-      quantity: 1, 
+      quantity: 1,
       image: recipe.imageUrl
-    };
-
-    this.cartService.addToCart(cartItem);
-    
-    
-    this.showalert(`${recipe.name} has been added to your cart!`);
+    });
+    this.showalert(`${recipe.name} added to cart!`);
   }
 
-  async showalert(header:string){
+  toggleWishlist(recipe: Recipe) {
+    this.showalert(`${recipe.name} added to wishlist`);
+  }
+
+  async showalert(header: string) {
     const alert = await this.alertController.create({
-      header:header,
-      buttons:['Ok']
-    })
+      header: header,
+      buttons: ['Ok']
+    });
     await alert.present();
-
   }
-
-  
 }

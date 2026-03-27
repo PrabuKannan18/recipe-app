@@ -1,55 +1,284 @@
-<ion-header>
-  <ion-toolbar color="light">
-    <ion-img src="assets/imgs/recipe.jpg" style="width: 150px; height: 70px; object-fit: cover; margin: auto;"></ion-img>
+<ion-header class="ion-no-border">
+  <ion-toolbar color="secondary">
+    <ion-title><b>Admin Control</b></ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="logout()">
+        <ion-icon name="log-out-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  <!-- Segment Selector -->
+  <ion-toolbar color="secondary">
+    <ion-segment [value]="currentMode" (ionChange)="segmentChanged($event)" mode="md" scrollable="true">
+      <ion-segment-button value="dashboard">
+        <ion-icon name="stats-chart-outline"></ion-icon>
+        <ion-label>Stats</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="products">
+        <ion-icon name="cube-outline"></ion-icon>
+        <ion-label>Products</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="orders">
+        <ion-icon name="receipt-outline"></ion-icon>
+        <ion-label>Orders</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="add" *ngIf="userProfile?.role === 'manager' || userProfile?.role === 'superadmin'">
+        <ion-icon name="add-outline"></ion-icon>
+        <ion-label>Add</ion-label>
+      </ion-segment-button>
+      
+      <!-- Superadmin Only Segments -->
+      <ion-segment-button value="organizations" *ngIf="userProfile?.role === 'superadmin'">
+        <ion-icon name="business-outline"></ion-icon>
+        <ion-label>Orgs</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="employees" *ngIf="userProfile?.role === 'superadmin'">
+        <ion-icon name="people-outline"></ion-icon>
+        <ion-label>Users</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="carts" *ngIf="userProfile?.role === 'superadmin'">
+        <ion-icon name="cart-outline"></ion-icon>
+        <ion-label>Carts</ion-label>
+      </ion-segment-button>
+    </ion-segment>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title color="secondary" class="ion-text-center"><strong>Add recipe</strong></ion-card-title>
-      <ion-card-subtitle class="ion-text-center">Fill in the details below</ion-card-subtitle>
-    </ion-card-header>
+<ion-content class="admin-content">
+  
+  <!-- 1. DASHBOARD VIEW -->
+  <div *ngIf="currentMode === 'dashboard'" class="dashboard-view ion-padding">
+    <div class="org-info-card" *ngIf="userProfile?.role === 'manager' && currentOrg">
+      <div class="org-header">
+        <ion-icon name="business-outline"></ion-icon>
+        <h3>{{ currentOrg.name }}</h3>
+      </div>
+      <div class="join-code-box">
+        <p>SHARE JOIN CODE WITH YOUR EMPLOYEES</p>
+        <div class="code-row">
+          <ion-icon name="key-outline"></ion-icon>
+          <span class="code-text">{{ currentOrg.joinCode }}</span>
+          <ion-button fill="clear" color="primary" size="small">
+            <ion-icon name="copy-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </div>
 
-    <ion-card-content>
-      <form [formGroup]="recipeForm" (ngSubmit)="addRecipe()">
-        <ion-list lines="full" inset="true">
-          <ion-item>
-            <ion-label position="stacked">Name: </ion-label>
-            <ion-input formControlName="name" placeholder="Enter the name" required></ion-input>
-          </ion-item>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3>{{ userProfile?.role === 'superadmin' ? 'Global Overview' : 'Overview (' + userProfile?.orgName + ')' }}</h3>
+      <ion-button fill="clear" size="small" (click)="updateOrgLogo()" *ngIf="userProfile?.role === 'manager'">
+        <ion-icon name="camera-outline" slot="start"></ion-icon> Set Logo
+      </ion-button>
+    </div>
+    
+    <ion-grid class="ion-no-padding">
+      <ion-row>
+        <ion-col size="4">
+          <div class="stat-card revenue">
+            <ion-icon name="cash-outline"></ion-icon>
+            <h2>₹{{ stats.revenue }}</h2>
+            <p>Revenue</p>
+          </div>
+        </ion-col>
+        <ion-col size="4">
+          <div class="stat-card orders">
+            <ion-icon name="receipt-outline"></ion-icon>
+            <h2>{{ stats.orders }}</h2>
+            <p>Orders</p>
+          </div>
+        </ion-col>
+        <ion-col size="4">
+          <div class="stat-card customers">
+            <ion-icon name="people-outline"></ion-icon>
+            <h2>{{ stats.customers }}</h2>
+            <p>Users</p>
+          </div>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+    
+    <div class="recent-orders-card ion-margin-top ion-padding">
+      <h4>Platform Pulse</h4>
+      <p *ngIf="userProfile?.role === 'superadmin'"><i>Monitoring all organizations activity</i></p>
+      <p><b>Revenue Tracking:</b> Live calculations</p>
+      <p><b>Auto-Isolation:</b> Active</p>
+    </div>
+  </div>
 
-          <ion-item>
-            <ion-label position="stacked">Price:</ion-label>
-            <ion-input formControlName="price" type="number" placeholder="Enter the price" required></ion-input>
-          </ion-item>
+  <!-- 2. PRODUCTS LIST VIEW -->
+  <div *ngIf="currentMode === 'products'" class="products-view">
+    <ion-list lines="full">
+      <ion-list-header>
+        <ion-label>Menu ({{ (recipes$ | async)?.length }})</ion-label>
+      </ion-list-header>
 
-          <ion-item>
-            <ion-label position="stacked">Description:</ion-label>
-            <ion-textarea formControlName="description" auto-grow="true" placeholder="Enter the description" required></ion-textarea>
-          </ion-item>
+      <ion-item *ngFor="let item of (recipes$ | async)" class="product-item">
+        <ion-thumbnail slot="start">
+          <img [src]="item.imageUrl">
+        </ion-thumbnail>
+        <ion-label>
+          <h3><b>{{ item.name }}</b></h3>
+          <p>{{ item.category }} | ₹{{ item.price }}</p>
+          <p *ngIf="userProfile?.role === 'superadmin'" class="ion-text-uppercase" style="font-size: 0.7rem; color: #ff4757;">Org ID: {{ item.orgId }}</p>
+        </ion-label>
+        <ion-buttons slot="end">
+          <ion-button color="primary">
+            <ion-icon name="create-outline" slot="icon-only" size="small"></ion-icon>
+          </ion-button>
+          <ion-button color="danger">
+            <ion-icon name="trash-outline" slot="icon-only" size="small"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-item>
+    </ion-list>
+  </div>
 
-          <ion-item>
-            <ion-label position="stacked">Category:</ion-label>
-            <ion-select formControlName="category" placeholder="Select category" required>
+  <!-- 3. ORDERS LIST VIEW -->
+  <div *ngIf="currentMode === 'orders'" class="ion-padding">
+    <ion-list-header>
+        <ion-label>Recent Orders ({{ (orders$ | async)?.length }})</ion-label>
+    </ion-list-header>
+    <ion-card *ngFor="let order of (orders$ | async)" class="ion-margin-bottom">
+      <ion-card-header>
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div>
+            <ion-card-title style="font-size: 1.1rem;"><b>{{ order.orderId }}</b></ion-card-title>
+            <p>{{ order.email }} | ₹{{ order.totalAmount }}</p>
+          </div>
+          <ion-badge color="primary">{{ order.status }}</ion-badge>
+        </div>
+      </ion-card-header>
+      <ion-card-content>
+        <p *ngFor="let item of order.items">• {{ item.name }} x{{ item.quantity }}</p>
+        <hr>
+        <div style="display: flex; justify-content: space-between; align-items: center;" class="ion-margin-top">
+          <p style="font-size: 0.8rem;">To: {{ order.address.fullAddress }}</p>
+          <ion-select [value]="order.status" (ionChange)="updateOrderStatus(order.id, $event.detail.value)" interface="popover">
+            <ion-select-option value="Preparing">Preparing</ion-select-option>
+            <ion-select-option value="Out for Delivery">Out For Delivery</ion-select-option>
+            <ion-select-option value="Delivered">Delivered</ion-select-option>
+          </ion-select>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- 3. ADD PRODUCT VIEW -->
+  <div *ngIf="currentMode === 'add'" class="add-view ion-padding">
+    <ion-card class="form-card">
+      <ion-card-header>
+        <ion-card-title><b>Add New Product</b></ion-card-title>
+        <p>This product will be visible only to <b>{{ userProfile?.orgName }}</b> employees.</p>
+      </ion-card-header>
+      <ion-card-content>
+        <form [formGroup]="recipeForm" (ngSubmit)="addRecipe()">
+          <div class="form-wrapper">
+            <ion-input fill="outline" label="Product Name" labelPlacement="floating" formControlName="name" placeholder="E.g., Cheesy Margherita Pizza" class="modern-input"></ion-input>
+
+            <ion-input fill="outline" label="Price (₹)" labelPlacement="floating" type="number" formControlName="price" placeholder="0.00" class="modern-input"></ion-input>
+
+            <ion-select fill="outline" label="Category" labelPlacement="floating" formControlName="category" interface="popover" class="modern-input">
               <ion-select-option value="Starters">Starters</ion-select-option>
               <ion-select-option value="Main Course">Main Course</ion-select-option>
-              <ion-select-option value="Ice-cream">Juice</ion-select-option>
+              <ion-select-option value="Beverages">Beverages</ion-select-option>
               <ion-select-option value="Desserts">Desserts</ion-select-option>
             </ion-select>
-          </ion-item>
 
-          <ion-item>
-            <ion-label position="stacked">Image url:</ion-label>
-            <ion-input formControlName="imageUrl" type="url" placeholder="Enter the image url" required></ion-input>
-          </ion-item>
-        </ion-list>
+            <ion-textarea fill="outline" label="Description" labelPlacement="floating" formControlName="description" auto-grow="true" placeholder="Enter delicious details..." class="modern-input" [rows]="3"></ion-textarea>
 
-        <div class="ion-padding ion-text-center">
-          <ion-button expand="block" color="primary" type="submit">Add recipe</ion-button>
-          <ion-button class="ion-padding-top" expand="block" color="secondary" (click)="logout()">Log out</ion-button>
+            <ion-input fill="outline" label="Image URL" labelPlacement="floating" formControlName="imageUrl" placeholder="https://..." class="modern-input"></ion-input>
+
+            <div class="upload-section">
+              <p class="upload-label">Or upload a photo directly</p>
+              <div class="file-drop-area">
+                <ion-icon name="cloud-upload-outline"></ion-icon>
+                <span class="file-text">Click to heavily choose a file...</span>
+                <input type="file" accept="image/*" (change)="onFileSelected($event)" class="file-input" />
+              </div>
+            </div>
+
+            <div *ngIf="recipeForm.get('imageUrl')?.value" class="preview-container">
+              <p class="preview-label">Image Preview Setup</p>
+              <img [src]="recipeForm.get('imageUrl')?.value" class="image-preview" />
+            </div>
+          </div>
+
+          <div class="btn-row ion-padding-top">
+            <ion-button expand="block" shape="round" type="submit" class="premium-btn">
+              <ion-icon name="add-outline" slot="start"></ion-icon> Save to Org Menu
+            </ion-button>
+          </div>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- 4. ORGANIZATIONS VIEW (Superadmin Only) -->
+  <div *ngIf="currentMode === 'organizations' && userProfile?.role === 'superadmin'" class="ion-padding">
+    <ion-list lines="full">
+      <ion-list-header>
+        <ion-label>Registered Organizations</ion-label>
+      </ion-list-header>
+      <ion-item *ngFor="let org of (organizations$ | async)">
+        <ion-icon name="business-outline" slot="start"></ion-icon>
+        <ion-label>
+          <h2><b>{{ org.name }}</b></h2>
+          <p>Manager: {{ org.managerEmail }}</p>
+        </ion-label>
+        <ion-badge slot="end" color="primary">Active</ion-badge>
+      </ion-item>
+    </ion-list>
+  </div>
+
+  <!-- 5. EMPLOYEES VIEW (Superadmin Only) -->
+  <div *ngIf="currentMode === 'employees' && userProfile?.role === 'superadmin'" class="ion-padding">
+    <ion-list lines="full">
+      <ion-list-header>
+        <ion-label>Global Users & Roles</ion-label>
+      </ion-list-header>
+      <ion-item *ngFor="let user of (allUsers$ | async)">
+        <ion-icon name="person-outline" slot="start"></ion-icon>
+        <ion-label>
+          <h2>{{ user.email }}</h2>
+          <p>Role: <b>{{ user.role }}</b> | Org: {{ user.orgName || 'N/A' }}</p>
+        </ion-label>
+        
+        <div slot="end" style="display: flex; gap: 8px;">
+          <!-- Role selector -->
+          <ion-select [value]="user.role" (ionChange)="updateUserRole(user, $event.detail.value)" interface="popover" placeholder="Role">
+            <ion-select-option value="member">Member</ion-select-option>
+            <ion-select-option value="manager">Manager</ion-select-option>
+          </ion-select>
+
+           <!-- Org selector -->
+           <ion-select [value]="user.orgId" (ionChange)="updateUserOrganization(user.uid, $event.detail.value.id, $event.detail.value.name)" interface="popover" placeholder="Org">
+            <ion-select-option *ngFor="let org of (organizations$ | async)" [value]="org">{{ org.name }}</ion-select-option>
+          </ion-select>
         </div>
-      </form>
-    </ion-card-content>
-  </ion-card>
+      </ion-item>
+    </ion-list>
+  </div>
+
+  <!-- 6. CARTS VIEW (Superadmin Only) -->
+  <div *ngIf="currentMode === 'carts' && userProfile?.role === 'superadmin'" class="ion-padding">
+    <ion-list lines="full">
+      <ion-list-header>
+        <ion-label>Current Shopping Carts Across Orgs</ion-label>
+      </ion-list-header>
+      <ion-card *ngFor="let cart of (allCarts$ | async)" class="ion-margin-bottom">
+        <ion-card-header>
+          <ion-card-title style="font-size: 1rem;"><b>User: {{ cart.email }}</b></ion-card-title>
+          <p>Org ID: {{ cart.orgId }} | Total: ₹{{ cart.totalAmount }}</p>
+        </ion-card-header>
+        <ion-card-content>
+          <p *ngFor="let item of cart.items">
+            - {{ item.name }} (x{{ item.quantity }}) : ₹{{ item.price * item.quantity }}
+          </p>
+        </ion-card-content>
+      </ion-card>
+    </ion-list>
+  </div>
+
 </ion-content>
